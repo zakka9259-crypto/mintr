@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mintr — Sign in</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="https://ui-avatars.com/api/?name=M&background=0a0a0a&color=ff2d2d&size=64&bold=true&length=1">
+<link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=M&background=0a0a0a&color=ff2d2d&size=180&bold=true&length=1">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+:root{--bg:#0a0a0a;--c:#121212;--b:#1f1f1f;--t:#f2f2f2;--m:#7a7a7a;--r:#ff2d2d;--gr:#4ade80}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--t);min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+body{padding:0 20px 40px;-webkit-text-size-adjust:100%}
+.loader{width:60px;height:60px;border-radius:50%;border:4px solid var(--b);border-top-color:var(--r);animation:s 1s linear infinite;margin:40vh auto 20px}
+@keyframes s{to{transform:rotate(360deg)}}
+.ldt{text-align:center;color:var(--m);font-size:14px}
+.err{padding:40px 24px;text-align:center;color:var(--r);font-size:13px;font-family:monospace;word-break:break-word}
+.screen{display:none;max-width:440px;margin:0 auto;padding-top:40px}
+.screen.active{display:block}
+.logo{font-size:38px;font-weight:900;letter-spacing:-1.5px;text-align:center;margin-bottom:6px}
+.logo span{color:var(--r)}
+.tag{text-align:center;color:var(--m);font-size:14px;margin-bottom:36px}
+.head{font-size:24px;font-weight:900;margin-bottom:6px}
+.sub{color:var(--m);font-size:14px;margin-bottom:24px;line-height:1.5}
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:12px;font-weight:800;color:var(--m);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.fld input,.fld select{width:100%;padding:15px 16px;background:var(--c);border:1px solid var(--b);border-radius:14px;color:var(--t);font-size:16px;font-family:inherit;outline:none;transition:border-color .15s}
+.fld input:focus,.fld select:focus{border-color:var(--r)}
+.fld input::placeholder{color:#4a4a4a}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:52px}
+.pw-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:40px;height:40px;background:transparent;border:none;color:var(--m);font-size:18px;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.hint{font-size:12px;color:var(--m);margin-top:6px}
+.hint.err{color:var(--r)}
+.hint.ok{color:var(--gr)}
+.type-row{display:flex;gap:10px;margin-bottom:20px}
+.type-btn{flex:1;padding:14px 12px;background:var(--c);border:2px solid var(--b);color:var(--m);border-radius:14px;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;text-align:center;transition:all .15s}
+.type-btn.on{border-color:var(--r);color:var(--r);background:rgba(255,45,45,.06)}
+.type-btn .t-ico{font-size:22px;display:block;margin-bottom:4px}
+.type-btn .t-lbl{display:block;font-size:13px}
+.type-btn .t-sub{display:block;font-size:10px;font-weight:600;color:var(--m);margin-top:2px}
+.type-btn.on .t-sub{color:#ff8b8b}
+.btn{width:100%;padding:16px;border-radius:999px;background:var(--r);color:#fff;border:none;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;transition:transform .12s;margin-top:8px}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.ghost{background:transparent;border:1px solid var(--b);color:var(--t);margin-top:10px}
+.link{display:block;text-align:center;color:var(--r);font-size:14px;font-weight:700;margin-top:20px;background:transparent;border:none;font-family:inherit;cursor:pointer;width:100%;padding:8px}
+.mut{display:block;text-align:center;color:var(--m);font-size:13px;margin-top:16px}
+.mut b{color:var(--r);font-weight:800}
+.check-row{display:flex;align-items:flex-start;gap:10px;margin:16px 0 8px}
+.check-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--r);flex-shrink:0;margin-top:2px}
+.check-row label{font-size:13px;color:var(--m);line-height:1.4}
+.check-row label a{color:var(--r);text-decoration:none}
+.banner{padding:12px 16px;border-radius:12px;background:rgba(255,45,45,.1);border:1px solid rgba(255,45,45,.35);color:#ff8b8b;font-size:13px;line-height:1.4;margin-bottom:16px;display:none}
+.banner.on{display:block}
+.banner.ok{background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.3);color:var(--gr)}
+</style>
+</head>
+<body>
+
+<div id="loading" style="min-height:100vh;display:flex;flex-direction:column;">
+<div class="loader"></div>
+<div class="ldt">Loading Mintr...</div>
+<div id="jsErrorBox" class="err"></div>
+</div>
+
+<!-- LOGIN -->
+<div class="screen" id="loginScreen">
+<div class="logo">min<span>tr</span></div>
+<div class="tag">Social + Marketplace</div>
+<div class="head">Welcome back</div>
+<div class="sub">Sign in to continue.</div>
+
+<div class="banner" id="loginBanner"></div>
+
+<div class="fld">
+<label>Email</label>
+<input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+</div>
+<div class="fld">
+<label>Password</label>
+<div class="pw-wrap">
+<input type="password" id="loginPw" placeholder="Your password" autocomplete="current-password"/>
+<button class="pw-eye" type="button" data-target="loginPw">👁</button>
+</div>
+</div>
+
+<button class="btn" id="loginBtn">Sign in</button>
+<button class="link" id="toForgot">Forgot password?</button>
+
+<div class="mut">New to Mintr? <b id="toSignup">Create account</b></div>
+</div>
+
+<!-- SIGNUP -->
+<div class="screen" id="signupScreen">
+<div class="logo">min<span>tr</span></div>
+<div class="tag">Social + Marketplace</div>
+<div class="head">Create your account</div>
+<div class="sub">Takes 30 seconds.</div>
+
+<div class="banner" id="signupBanner"></div>
+
+<div class="fld">
+<label>Account type</label>
+</div>
+<div class="type-row">
+<button class="type-btn on" data-type="personal" type="button">
+<span class="t-ico">👤</span>
+<span class="t-lbl">Personal</span>
+<span class="t-sub">Friends & feed</span>
+</button>
+<button class="type-btn" data-type="business" type="button">
+<span class="t-ico">🏢</span>
+<span class="t-lbl">Business</span>
+<span class="t-sub">Followers & store</span>
+</button>
+</div>
+<div class="hint" style="margin:-12px 0 16px;font-size:12px;">Choose carefully — you can't switch later.</div>
+
+<div class="fld">
+<label>Display name</label>
+<input type="text" id="suName" placeholder="Your name" maxlength="30" autocomplete="name"/>
+</div>
+
+<div class="fld">
+<label>Username</label>
+<input type="text" id="suUser" placeholder="@username" maxlength="20" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+<div class="hint" id="userHint">3–20 characters. Letters, numbers, underscore.</div>
+</div>
+
+<div class="fld">
+<label>Email</label>
+<input type="email" id="suEmail" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+</div>
+
+<div class="fld">
+<label>Password</label>
+<div class="pw-wrap">
+<input type="password" id="suPw" placeholder="At least 8 characters" autocomplete="new-password"/>
+<button class="pw-eye" type="button" data-target="suPw">👁</button>
+</div>
+<div class="hint" id="pwHint">Minimum 8 characters.</div>
+</div>
+
+<div class="fld">
+<label>Date of birth</label>
+<input type="date" id="suDob"/>
+<div class="hint" id="dobHint">You must be 14 or older.</div>
+</div>
+
+<div class="check-row">
+<input type="checkbox" id="suAgree"/>
+<label for="suAgree">I agree to Mintr's <a href="#" id="termsLink">Terms</a> and <a href="#" id="privacyLink">Privacy Policy</a>.</label>
+</div>
+
+<button class="btn" id="suBtn">Create account</button>
+
+<div class="mut">Already have an account? <b id="toLogin">Sign in</b></div>
+</div>
+
+<!-- FORGOT -->
+<div class="screen" id="forgotScreen">
+<div class="logo">min<span>tr</span></div>
+<div class="tag">Reset your password</div>
+<div class="head">Forgot password</div>
+<div class="sub">We'll email you a reset link.</div>
+
+<div class="banner" id="forgotBanner"></div>
+
+<div class="fld">
+<label>Email</label>
+<input type="email" id="fpEmail" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+</div>
+
+<button class="btn" id="fpBtn">Send reset link</button>
+<button class="link" id="toLogin2">← Back to sign in</button>
+</div>
+
+<script>
+window.addEventListener('error',function(e){
+  var b=document.getElementById('jsErrorBox');
+  if(b)b.textContent='JS ERROR: '+(e.message||e.error||'unknown');
+});
+
+firebase.initializeApp({
+apiKey:"AIzaSyBXOZBv0t9tqNUt3Jj6FpM5w4kpRBliodQ",
+authDomain:"mintr-fbf19.firebaseapp.com",
+databaseURL:"https://mintr-fbf19-default-rtdb.firebaseio.com",
+projectId:"mintr-fbf19",
+storageBucket:"mintr-fbf19.firebasestorage.app",
+messagingSenderId:"308745133225",
+appId:"1:308745133225:web:4b9ff9ac1d8849b134ddb8"
+});
+
+var auth=firebase.auth(),db=firebase.database();
+var _signingUp=false;
+var _redirecting=false;
+var acctType='personal';
+
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  document.getElementById('loading').style.display='none';
+  window.scrollTo(0,0);
+}
+
+function banner(id,msg,kind){
+  var b=document.getElementById(id);
+  if(!msg){b.classList.remove('on');b.textContent='';return;}
+  b.textContent=msg;
+  b.className='banner on'+(kind==='ok'?' ok':'');
+}
+
+/* Password show/hide */
+document.querySelectorAll('.pw-eye').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var target=document.getElementById(btn.getAttribute('data-target'));
+    if(!target)return;
+    if(target.type==='password'){target.type='text';btn.textContent='🙈';}
+    else{target.type='password';btn.textContent='👁';}
+  });
+});
+
+/* Screen switchers */
+document.getElementById('toSignup').addEventListener('click',function(){
+  banner('loginBanner','');
+  showScreen('signupScreen');
+});
+document.getElementById('toLogin').addEventListener('click',function(){
+  banner('signupBanner','');
+  showScreen('loginScreen');
+});
+document.getElementById('toForgot').addEventListener('click',function(){
+  banner('loginBanner','');
+  showScreen('forgotScreen');
+});
+document.getElementById('toLogin2').addEventListener('click',function(){
+  banner('forgotBanner','');
+  showScreen('loginScreen');
+});
+
+/* Account type toggle */
+document.querySelectorAll('.type-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.type-btn').forEach(function(x){x.classList.remove('on');});
+    btn.classList.add('on');
+    acctType=btn.getAttribute('data-type');
+  });
+});
+
+/* Reserved usernames */
+var RESERVED=['admin','administrator','root','mintr','mintrapp','support','help','official','staff','team','mod','moderator','api','system','mail','email','info','contact','security','superuser','owner','founder','zakka','haith','about','terms','privacy','legal','business','marketplace','chat','feed','home','login','signup','register','user','users','guest','null','undefined','void','yes','no','true','false','facebook','twitter','instagram','tiktok','google','apple','new','delete','settings','setting','you','me','mine'];
+
+var unCheckTimer=null;
+var unStatus=''; /* '', 'ok', 'taken', 'reserved', 'invalid' */
+
+function validateUsername(v){
+  var h=document.getElementById('userHint');
+  h.className='hint';
+  unStatus='';
+  if(!v){
+    h.textContent='3–20 characters. Letters, numbers, underscore.';
+    return;
+  }
+  if(!/^[a-z0-9_]{3,20}$/i.test(v)){
+    h.textContent='Only letters, numbers, underscore. 3–20 characters.';
+    h.className='hint err';
+    unStatus='invalid';
+    return;
+  }
+  if(RESERVED.indexOf(v.toLowerCase())>-1){
+    h.textContent='That username is reserved.';
+    h.className='hint err';
+    unStatus='reserved';
+    return;
+  }
+  h.textContent='Checking…';
+  if(unCheckTimer)clearTimeout(unCheckTimer);
+  unCheckTimer=setTimeout(function(){
+    db.ref('usernames/'+v.toLowerCase()).once('value',function(s){
+      if(s.exists()){
+        h.textContent='@'+v+' is taken.';
+        h.className='hint err';
+        unStatus='taken';
+      } else {
+        h.textContent='@'+v+' is available.';
+        h.className='hint ok';
+        unStatus='ok';
+      }
+    },function(){
+      h.textContent='Could not check — try again.';
+      h.className='hint err';
+      unStatus='';
+    });
+  },400);
+}
+
+document.getElementById('suUser').addEventListener('input',function(){
+  this.value=this.value.replace(/[^a-zA-Z0-9_]/g,'').toLowerCase();
+  validateUsername(this.value);
+});
+
+document.getElementById('suPw').addEventListener('input',function(){
+  var h=document.getElementById('pwHint');
+  h.className='hint';
+  if(this.value.length>=8){h.textContent='Looks good.';h.className='hint ok';}
+  else h.textContent='Minimum 8 characters.';
+});
+
+document.getElementById('suDob').addEventListener('input',function(){
+  var h=document.getElementById('dobHint');
+  h.className='hint';
+  if(!this.value){h.textContent='You must be 14 or older.';return;}
+  var dob=new Date(this.value);
+  if(isNaN(dob.getTime())){h.textContent='Enter a valid date.';h.className='hint err';return;}
+  var age=Math.floor((Date.now()-dob.getTime())/(365.25*24*3600*1000));
+  if(age<14){h.textContent='You must be 14 or older.';h.className='hint err';}
+  else if(age>120){h.textContent='Enter a valid date.';h.className='hint err';}
+  else {h.textContent='Age '+age+' — ok.';h.className='hint ok';}
+});
+
+/* LOGIN */
+document.getElementById('loginBtn').addEventListener('click',function(){
+  var btn=this;
+  var email=document.getElementById('loginEmail').value.trim();
+  var pw=document.getElementById('loginPw').value;
+  banner('loginBanner','');
+  if(!email){banner('loginBanner','Enter your email.');return;}
+  if(!pw){banner('loginBanner','Enter your password.');return;}
+  btn.disabled=true;btn.textContent='Signing in…';
+  auth.signInWithEmailAndPassword(email,pw).then(function(){
+    _redirecting=true;
+    location.href='mintr-feed.html';
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='Sign in';
+    var m=e.code||e.message;
+    if(m.indexOf('user-not-found')>-1||m.indexOf('wrong-password')>-1||m.indexOf('invalid-credential')>-1)banner('loginBanner','Wrong email or password.');
+    else if(m.indexOf('too-many-requests')>-1)banner('loginBanner','Too many attempts. Try again later.');
+    else if(m.indexOf('network')>-1)banner('loginBanner','Network error. Check your connection.');
+    else banner('loginBanner',e.message||'Sign in failed.');
+  });
+});
+
+document.getElementById('loginPw').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){e.preventDefault();document.getElementById('loginBtn').click();}
+});
+
+/* SIGNUP */
+document.getElementById('suBtn').addEventListener('click',function(){
+  var btn=this;
+  var name=document.getElementById('suName').value.trim();
+  var user=document.getElementById('suUser').value.trim().toLowerCase();
+  var email=document.getElementById('suEmail').value.trim();
+  var pw=document.getElementById('suPw').value;
+  var dob=document.getElementById('suDob').value;
+  var agreed=document.getElementById('suAgree').checked;
+
+  banner('signupBanner','');
+
+  if(!name){banner('signupBanner','Enter your display name.');return;}
+  if(name.length<2){banner('signupBanner','Display name is too short.');return;}
+  if(!user){banner('signupBanner','Choose a username.');return;}
+  if(!/^[a-z0-9_]{3,20}$/i.test(user)){banner('signupBanner','Username can only contain letters, numbers, underscore (3–20).');return;}
+  if(RESERVED.indexOf(user)>-1){banner('signupBanner','That username is reserved.');return;}
+  if(!email||email.indexOf('@')<0){banner('signupBanner','Enter a valid email.');return;}
+  if(!pw||pw.length<8){banner('signupBanner','Password must be at least 8 characters.');return;}
+  if(!dob){banner('signupBanner','Enter your date of birth.');return;}
+  var dobD=new Date(dob);
+  if(isNaN(dobD.getTime())){banner('signupBanner','Enter a valid date of birth.');return;}
+  var age=Math.floor((Date.now()-dobD.getTime())/(365.25*24*3600*1000));
+  if(age<14){banner('signupBanner','You must be 14 or older to use Mintr.');return;}
+  if(!agreed){banner('signupBanner','Please agree to the Terms and Privacy Policy.');return;}
+  if(unStatus==='taken'){banner('signupBanner','That username is taken.');return;}
+  if(unStatus==='reserved'){banner('signupBanner','That username is reserved.');return;}
+
+  btn.disabled=true;btn.textContent='Creating account…';
+  _signingUp=true;
+
+  /* First check the username is truly free, then create */
+  db.ref('usernames/'+user).once('value',function(snap){
+    if(snap.exists()){
+      _signingUp=false;
+      btn.disabled=false;btn.textContent='Create account';
+      banner('signupBanner','That username was just taken. Try another.');
+      return;
+    }
+    auth.createUserWithEmailAndPassword(email,pw).then(function(cred){
+      var uid=cred.user.uid;
+      var payload={
+        displayName:name,
+        username:user,
+        email:email,
+        accountType:acctType,
+        dob:dob,
+        createdAt:Date.now(),
+        emailVerified:false
+      };
+      var updates={};
+      updates['users/'+uid]=payload;
+      updates['usernames/'+user]=uid;
+      return db.ref().update(updates).then(function(){
+        return auth.currentUser.sendEmailVerification().catch(function(){});
+      }).then(function(){
+        return auth.currentUser.updateProfile({displayName:name}).catch(function(){});
+      });
+    }).then(function(){
+      location.href='mintr-feed.html';
+    }).catch(function(e){
+      _signingUp=false;
+      btn.disabled=false;btn.textContent='Create account';
+      var m=e.code||e.message;
+      if(m.indexOf('email-already-in-use')>-1)banner('signupBanner','That email is already registered. Try signing in.');
+      else if(m.indexOf('invalid-email')>-1)banner('signupBanner','That email looks invalid.');
+      else if(m.indexOf('weak-password')>-1)banner('signupBanner','Password is too weak.');
+      else if(m.indexOf('network')>-1)banner('signupBanner','Network error. Check your connection.');
+      else banner('signupBanner',e.message||'Signup failed.');
+    });
+  });
+});
+
+document.getElementById('suName').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){e.preventDefault();document.getElementById('suUser').focus();}
+});
+document.getElementById('suUser').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){e.preventDefault();document.getElementById('suEmail').focus();}
+});
+
+/* FORGOT */
+document.getElementById('fpBtn').addEventListener('click',function(){
+  var btn=this;
+  var email=document.getElementById('fpEmail').value.trim();
+  banner('forgotBanner','');
+  if(!email||email.indexOf('@')<0){banner('forgotBanner','Enter a valid email.');return;}
+  btn.disabled=true;btn.textContent='Sending…';
+  auth.sendPasswordResetEmail(email).then(function(){
+    btn.disabled=false;btn.textContent='Send reset link';
+    banner('forgotBanner','Reset link sent. Check your inbox (and spam).','ok');
+  }).catch(function(e){
+    btn.disabled=false;btn.textContent='Send reset link';
+    var m=e.code||e.message;
+    if(m.indexOf('user-not-found')>-1)banner('forgotBanner','No account with that email.',''); 
+    else banner('forgotBanner',e.message||'Could not send reset email.');
+  });
+});
+
+/* Terms / Privacy */
+document.getElementById('termsLink').addEventListener('click',function(e){e.preventDefault();alert('Terms of Service\n\nFull document coming in Stage 6. For now: use Mintr fairly, no harassment, no scams, no illegal content. Restriction over blocking.');});
+document.getElementById('privacyLink').addEventListener('click',function(e){e.preventDefault();alert('Privacy Policy\n\nFull document coming in Stage 6. For now: we store your email, name, username, dob, and content you post. We do not sell your data.');});
+
+/* AUTH STATE */
+auth.onAuthStateChanged(function(u){
+  if(_signingUp||_redirecting)return;
+  if(u){
+    _redirecting=true;
+    location.href='mintr-feed.html';
+  } else {
+    showScreen('loginScreen');
+  }
+});
+
+/* Fallback: if Firebase doesn't respond within 5s, show login anyway */
+setTimeout(function(){
+  var ld=document.getElementById('loading');
+  if(ld&&ld.style.display!=='none'){
+    if(_signingUp||_redirecting)return;
+    showScreen('loginScreen');
+  }
+},5000);
+</script>
+
+</body>
+</html>
